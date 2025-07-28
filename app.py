@@ -28,8 +28,8 @@ app = FastAPI(title="Aadhar Processing API", version="1.0.0")
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# On Railway, volumes are mounted at a path like '/data'. We default to a local 'data' folder.
-DATA_ROOT = Path(os.getenv("RAILWAY_VOLUME_MOUNT_PATH", "data"))
+# Use the RENDER_DISK_MOUNT_PATH if available, otherwise default to a local 'data' directory
+DATA_ROOT = Path(os.getenv("RENDER_DISK_MOUNT_PATH", "data"))
 
 UPLOAD_DIR = DATA_ROOT / "uploads"
 RESULTS_DIR = DATA_ROOT / "results"

@@ -3,9 +3,9 @@ from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# On Railway, volumes are mounted at a path like '/data'. We default to a local 'data' folder.
-DATA_ROOT = Path(os.getenv("RAILWAY_VOLUME_MOUNT_PATH", "data"))
-DATA_ROOT.mkdir(exist_ok=True)
+# Use the RENDER_DISK_MOUNT_PATH if available, otherwise default to a local 'data' directory
+DATA_ROOT = Path(os.getenv("RENDER_DISK_MOUNT_PATH", "data"))
+DATA_ROOT.mkdir(exist_ok=True) # Ensure the data directory exists
 
 DATABASE_URL = f"sqlite+aiosqlite:///{DATA_ROOT / 'aadhar_processing.db'}"
 
@@ -16,4 +16,3 @@ Base = declarative_base()
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        
