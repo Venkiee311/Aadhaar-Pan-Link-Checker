@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -251,9 +252,10 @@ async def create_output_excel(job_id: str) -> None:
                 error_sheet.append(record)
         
         # Save file
-        results_dir = Path("results")
-        results_dir.mkdir(exist_ok=True)
-        output_path = results_dir / f"{job_id}_results.xlsx"
+        DATA_ROOT = Path(os.getenv("RAILWAY_VOLUME_MOUNT_PATH", "data"))
+        RESULTS_DIR = DATA_ROOT / "results"
+        RESULTS_DIR.mkdir(exist_ok=True)
+        output_path = RESULTS_DIR / f"{job_id}_results.xlsx"
         
         workbook.save(output_path)
         logger.info(f"Results saved to {output_path}")
@@ -426,4 +428,4 @@ async def retry_failed_processing(job_id: str) -> None:
                 .where(ProcessingJob.id == job_id)
                 .values(status="failed", error_message=f"Retry failed: {str(e)}", completed_at=datetime.utcnow())
             )
-            await db.commit()
+            await db.commit()            
