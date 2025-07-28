@@ -1,10 +1,17 @@
+import os
+from pathlib import Path
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = "sqlite+aiosqlite:///./aadhar_processing.db"
+# Use the RENDER_DISK_MOUNT_PATH if available, otherwise default to a local 'data' directory
+DATA_ROOT = Path(os.getenv("RENDER_DISK_MOUNT_PATH", "data"))
+DATA_ROOT.mkdir(exist_ok=True) # Ensure the data directory exists
 
-engine = create_async_engine(DATABASE_URL, echo=True)
+# Point the database URL to the new persistent location
+DATABASE_URL = f"sqlite+aiosqlite:///{DATA_ROOT / 'aadhar_processing.db'}"
+
+engine = create_async_engine(DATABASE_URL, echo=False) # Turned echo off for production
 SessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 Base = declarative_base()

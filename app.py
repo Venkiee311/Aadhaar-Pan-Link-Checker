@@ -28,8 +28,14 @@ app = FastAPI(title="Aadhar Processing API", version="1.0.0")
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-UPLOAD_DIR = Path("uploads")
-RESULTS_DIR = Path("results")
+# Use the RENDER_DISK_MOUNT_PATH if available (on Render), 
+# otherwise default to a local 'data' directory.
+DATA_ROOT = Path(os.getenv("RENDER_DISK_MOUNT_PATH", "data"))
+
+UPLOAD_DIR = DATA_ROOT / "uploads"
+RESULTS_DIR = DATA_ROOT / "results"
+
+# Create directories if they don't exist
 UPLOAD_DIR.mkdir(exist_ok=True)
 RESULTS_DIR.mkdir(exist_ok=True)
 
