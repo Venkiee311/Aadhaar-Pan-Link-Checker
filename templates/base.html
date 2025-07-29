@@ -7,6 +7,46 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            /* ==================================================================
+            === EDIT THIS COLOR TO CHANGE THE SITE'S BRAND COLOR           ===
+            ==================================================================
+            I have set a new color below that should be a much closer match.
+            If it's still not perfect, you can replace '#0E468C' with any
+            other hex code to fine-tune it yourself.
+            */
+            --brand-color: #0E468C; 
+            --brand-color-hover: #0B3A74; /* This is a darker shade for hover effects */
+        }
+
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+        .card {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            border: none;
+            border-radius: .5rem;
+        }
+        
+        /* Custom styles now use the variables defined above */
+        .navbar-brand-color {
+            background-color: var(--brand-color) !important;
+        }
+        
+        .btn-brand {
+            background-color: var(--brand-color);
+            border-color: var(--brand-color);
+            color: #fff;
+        }
+        .btn-brand:hover {
+            background-color: var(--brand-color-hover);
+            border-color: var(--brand-color-hover);
+            color: #fff;
+        }
+
         .status-card {
             border-left: 4px solid #007bff;
             margin-bottom: 20px;
@@ -21,19 +61,26 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark bg-dark">
+    <nav class="navbar navbar-dark py-2 navbar-brand-color">
         <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-file-excel"></i> Pan-Aadhaar Link Checker
-            </a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="/">Upload</a>
-                <a class="nav-link" href="/status">Status</a>
+            <div class="w-100 d-flex justify-content-between align-items-center">
+                <a class="navbar-brand" href="/">
+                    <i class="fas fa-file-excel"></i> Pan-Aadhaar Link Checker
+                </a>
+                
+                <a href="/">
+                    <img src="{{ url_for('static', path='logo.png') }}" alt="Eureka Forbes Logo" style="height: 50px;">
+                </a>
+
+                <div class="navbar-nav d-flex flex-row">
+                    <a class="nav-link px-2" href="/">Upload</a>
+                    <a class="nav-link px-2" href="/status">Status</a>
+                </div>
             </div>
         </div>
     </nav>
 
-    <main class="container mt-4">
+    <main class="container py-4">
         {% block content %}{% endblock %}
     </main>
 

@@ -3,28 +3,20 @@
 {% block title %}Processing Status - Pan-Aadhaar Link Checker{% endblock %}
 
 {% block content %}
-<div style="text-align:center; margin-top:20px;">
-    <img src="{{ url_for('static', path='logo.png') }}" alt="Eureka Forbes Logo" style="max-width:250px; height:auto;">
-</div>
-
-<!-- Instruction/Advice Message Box -->
-<div class="alert alert-info mt-4" role="alert" style="max-width:700px; margin:auto;">
+<div class="alert alert-info mt-4" role="alert">
     <strong>Note:</strong> If you see errors in processing, please use the <b>Retry</b> button. 
     <br>
-    <ul class="mb-1">
+    <ul class="mb-1 mt-2">
         <li>Errors often occur due to the government API being slow, temporarily unavailable, or rate-limited.</li>
-        <li>Retrying will attempt to process only the failed or unprocessed records, increasing your chances of success.</li>
-        <li>If errors persist, wait a few minutes and try again. This is a limitation of the public API, not this application.</li>
+        <li>Retrying will attempt to process only the failed or unprocessed records.</li>
+        <li>If errors persist, please wait a few minutes and try again.</li>
     </ul>
-    <span class="text-muted" style="font-size:0.95em;">
-        The Pan-Aadhaar Link Checker uses the official Income Tax Portal API, which may sometimes reject or delay requests due to high load or rate limits.
-    </span>
 </div>
 
 <div class="row">
     <div class="col-12">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h3><i class="fas fa-tasks"></i> Processing Jobs Status</h3>
                 <button class="btn btn-outline-primary" onclick="refreshJobs()">
                     <i class="fas fa-sync-alt"></i> Refresh
@@ -44,7 +36,6 @@
     </div>
 </div>
 
-<!-- Job Details Modal -->
 <div class="modal fade" id="jobModal" tabindex="-1" aria-labelledby="jobModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -53,8 +44,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="jobModalBody">
-                <!-- Job details will be loaded here -->
-            </div>
+                </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-warning" id="retryBtn" style="display: none;">
@@ -82,7 +72,7 @@ async function loadJobs() {
         
         if (jobs.length === 0) {
             jobsList.innerHTML = `
-                <div class="text-center text-muted">
+                <div class="text-center text-muted py-5">
                     <i class="fas fa-inbox fa-3x mb-3"></i>
                     <p>No jobs found. <a href="/">Upload an Excel file</a> to get started.</p>
                 </div>
@@ -102,13 +92,13 @@ async function loadJobs() {
                     <div class="card status-card status-${job.status}">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start">
-                                <h6 class="card-title">
-                                    <i class="fas fa-file-excel"></i> ${job.filename}
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-file-excel text-success"></i> ${job.filename}
                                 </h6>
                                 ${statusBadge}
                             </div>
-                            <p class="card-text">
-                                <small class="text-muted">Job ID: ${job.job_id}</small><br>
+                            <p class="card-text mt-2">
+                                <small class="text-muted d-block">Job ID: ${job.job_id}</small>
                                 <strong>Total Rows:</strong> ${job.total_rows}<br>
                                 <strong>Created:</strong> ${createdAt}<br>
                                 <strong>Completed:</strong> ${completedAt}
@@ -159,7 +149,7 @@ async function viewJobDetails(jobId) {
             <div class="row">
                 <div class="col-md-6">
                     <h6>Job Information</h6>
-                    <table class="table table-sm">
+                    <table class="table table-sm table-borderless">
                         <tr><td><strong>Job ID:</strong></td><td><code>${job.job_id}</code></td></tr>
                         <tr><td><strong>Status:</strong></td><td>${getStatusBadge(job.status)}</td></tr>
                         <tr><td><strong>Created:</strong></td><td>${createdAt}</td></tr>
@@ -168,11 +158,11 @@ async function viewJobDetails(jobId) {
                 </div>
                 <div class="col-md-6">
                     <h6>Processing Statistics</h6>
-                    <table class="table table-sm">
+                    <table class="table table-sm table-borderless">
                         <tr><td><strong>Total Rows:</strong></td><td>${job.total_rows}</td></tr>
                         <tr><td><strong>Processed:</strong></td><td>${job.processed_rows}</td></tr>
-                        <tr><td><strong>Success:</strong></td><td><span class="text-success">${job.success_count}</span></td></tr>
-                        <tr><td><strong>Errors:</strong></td><td><span class="text-danger">${job.error_count}</span></td></tr>
+                        <tr><td><strong>Success:</strong></td><td><span class="text-success fw-bold">${job.success_count}</span></td></tr>
+                        <tr><td><strong>Errors:</strong></td><td><span class="text-danger fw-bold">${job.error_count}</span></td></tr>
                     </table>
                 </div>
             </div>
@@ -180,7 +170,7 @@ async function viewJobDetails(jobId) {
             <div class="progress-container">
                 <h6>Progress</h6>
                 <div class="progress">
-                    <div class="progress-bar" role="progressbar" style="width: ${progressPercent}%" 
+                    <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: ${progressPercent}%" 
                          aria-valuenow="${progressPercent}" aria-valuemin="0" aria-valuemax="100">
                         ${progressPercent}%
                     </div>
@@ -198,16 +188,15 @@ async function viewJobDetails(jobId) {
         const retryBtn = document.getElementById('retryBtn');
         
         if (job.status === 'completed') {
-            downloadBtn.style.display = 'block';
+            downloadBtn.style.display = 'inline-block';
             downloadBtn.onclick = () => window.open(`/jobs/${jobId}/download`);
         } else {
             downloadBtn.style.display = 'none';
         }
         
-        // Show retry button for jobs that have unprocessed or failed employees
         const hasIncompleteProcessing = job.processed_rows < job.total_rows || job.error_count > 0;
         if ((job.status === 'failed' || job.status === 'completed' || job.status === 'processing') && hasIncompleteProcessing) {
-            retryBtn.style.display = 'block';
+            retryBtn.style.display = 'inline-block';
             retryBtn.onclick = () => retryJob(jobId);
         } else {
             retryBtn.style.display = 'none';
@@ -247,8 +236,10 @@ async function retryJob(jobId) {
             const result = await response.json();
             alert(`Job retry initiated! ${result.employees_to_retry} employees will be retried.`);
             
-            // Close modal and refresh jobs list
-            bootstrap.Modal.getInstance(document.getElementById('jobModal')).hide();
+            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('jobModal'));
+            if (modalInstance) {
+                modalInstance.hide();
+            }
             loadJobs();
         } else {
             const error = await response.json();
@@ -273,13 +264,11 @@ function stopAutoRefresh() {
     }
 }
 
-// Load jobs on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadJobs();
     startAutoRefresh();
 });
 
-// Stop auto-refresh when page is hidden
 document.addEventListener('visibilitychange', function() {
     if (document.hidden) {
         stopAutoRefresh();

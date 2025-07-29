@@ -3,40 +3,38 @@
 {% block title %}Upload Excel File - Aadhar Processing{% endblock %}
 
 {% block content %}
-<div style="text-align:center; margin-top:20px;">
-    <img src="{{ url_for('static', path='logo.png') }}" alt="Eureka Forbes Logo" style="max-width:250px; height:auto;">
-</div>
-
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card">
-            <div class="card-header">
-                <h3><i class="fas fa-upload"></i> Upload Excel File for Processing</h3>
+            <div class="card-header bg-white pb-0 border-0">
+                <h3 class="text-center mb-0"><i class="fas fa-upload"></i> Upload Excel File for Processing</h3>
             </div>
             <div class="card-body">
                 <form id="uploadForm" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label for="file" class="form-label">Excel File (.xlsx, .xls)</label>
                         <input type="file" class="form-control" id="file" name="file" accept=".xlsx,.xls" required>
-                        <div class="form-text">Select an Excel file containing employee data with columns: EMPNO, EMPLOYEE NAME, PAN NO, Aadhar NO</div>
+                        <div class="form-text">Select an Excel file with the columns shown in the format guide below.</div>
                     </div>
                     
                     <div class="mb-3">
                         <label for="sheet_name" class="form-label">Sheet Name</label>
                         <input type="text" class="form-control" id="sheet_name" name="sheet_name" value="Sheet1" required>
-                        <div class="form-text">Name of the sheet containing the employee data</div>
+                        <div class="form-text">Name of the sheet containing the employee data.</div>
                     </div>
                     
-                    <button type="submit" class="btn btn-primary" id="uploadBtn">
-                        <i class="fas fa-upload"></i> Upload and Process
-                    </button>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-brand btn-lg" id="uploadBtn">
+                            <i class="fas fa-cogs"></i> Upload and Process
+                        </button>
+                    </div>
                 </form>
                 
                 <div id="uploadProgress" class="mt-3" style="display: none;">
                     <div class="progress">
                         <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
                     </div>
-                    <p class="mt-2">Uploading and validating file...</p>
+                    <p class="mt-2 text-center">Uploading and validating file...</p>
                 </div>
                 
                 <div id="uploadResult" class="mt-3"></div>
@@ -44,18 +42,41 @@
         </div>
         
         <div class="card mt-4">
-            <div class="card-header">
-                <h4><i class="fas fa-info-circle"></i> Instructions</h4>
+            <div class="card-header bg-white">
+                <h4><i class="fas fa-table"></i> Input File Format</h4>
             </div>
             <div class="card-body">
-                <ul>
-                    <li>Upload an Excel file (.xlsx or .xls) containing employee data</li>
-                    <li>The file must have columns: <strong>EMPNO</strong>, <strong>EMPLOYEE NAME</strong>, <strong>PAN NO</strong>, <strong>Aadhar NO</strong></li>
-                    <li>The system will process each employee record through the Aadhar verification API</li>
-                    <li>Processing respects API rate limits and includes automatic retries</li>
-                    <li>You can track the progress on the <a href="/status">Status page</a></li>
-                    <li>Download processed results once completion is complete</li>
-                </ul>
+                <p>Your Excel file must contain the following columns in any order:</p>
+                <table class="table table-bordered table-striped text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th>EMPNO</th>
+                            <th>EMPLOYEE NAME</th>
+                            <th>PAN NO</th>
+                            <th>Aadhar NO</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1001</td>
+                            <td>John Doe</td>
+                            <td>ABCDE1234F</td>
+                            <td>123456789012</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('static', path='input_format_template.xlsx') }}" class="btn btn-success" download>
+                        <i class="fas fa-download"></i> Download Format Template
+                    </a>
+                </div>
+                <hr>
+                <div class="mt-3">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-info-circle text-primary"></i> After uploading, you can track the job's real-time progress on the <a href="/status"><b>Status Page</b></a>.</li>
+                        <li><i class="fas fa-redo text-warning"></i> If any records fail, you can retry the job from the status page.</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
@@ -84,6 +105,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
     const uploadResult = document.getElementById('uploadResult');
     
     uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
     uploadProgress.style.display = 'block';
     uploadResult.innerHTML = '';
     
@@ -124,6 +146,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
         `;
     } finally {
         uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fas fa-cogs"></i> Upload and Process';
         uploadProgress.style.display = 'none';
     }
 });
