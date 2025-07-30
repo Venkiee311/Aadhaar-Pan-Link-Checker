@@ -162,3 +162,9 @@ websockets==15.0.1
     # via uvicorn
 yarl==1.20.1
     # via aiohttp
+requests[security]==2.32.4
+    # via aadhar (pyproject.toml)
+    # via requests
+    # via sentry-sdk
+    # via httpx
+    # via fastapi-cloud-cli

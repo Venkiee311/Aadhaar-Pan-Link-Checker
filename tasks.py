@@ -77,7 +77,16 @@ async def call_api_with_session(session: aiohttp.ClientSession, pan: str, aadhar
                 response_text = await response.text()
                 
                 if response.status == 429:  # Rate limited
+                    logger.warning(f"Rate limited by API for PAN {pan}, Aadhar {aadhar}")
                     return None, "Rate limited", status_code
+                
+                if response.status == 403:
+                    logger.error(f"API access forbidden (possible IP block) for PAN {pan}, Aadhar {aadhar}")
+                    return None, "API access forbidden", status_code
+                
+                if response.status == 503:
+                    logger.error(f"API service unavailable for PAN {pan}, Aadhar {aadhar}")
+                    return None, "API service unavailable", status_code
                 
                 response.raise_for_status()
                 response_json = await response.json()
@@ -90,6 +99,7 @@ async def call_api_with_session(session: aiohttp.ClientSession, pan: str, aadhar
     except ValidationError as e:
         return None, f"Response validation error: {str(e)}", None
     except Exception as e:
+        logger.error(f"API call failed for PAN {pan}, Aadhar {aadhar}: {e}")
         return None, f"Unexpected error: {str(e)}", None
 
 async def process_employee_with_retries(
@@ -103,11 +113,13 @@ async def process_employee_with_retries(
     while retry_count <= MAX_RETRIES:
         try:
             logger.info(f"Processing employee {employee.employee_name} (attempt {retry_count + 1})")
+            logger.info(f"About to call API for PAN {employee.pan_no}, Aadhar {employee.aadhar_no}")
             
             api_response, error_message, status_code = await call_api_with_session(
                 session, str(employee.pan_no), str(employee.aadhar_no)
             )
-            
+            logger.info(f"API call finished for PAN {employee.pan_no}, status: {status_code}, error: {error_message}")
+
             # Handle rate limiting
             if status_code == 429:
                 retry_count += 1
