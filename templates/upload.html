@@ -3,47 +3,42 @@
 {% block title %}Upload Excel File - Aadhar Processing{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-content-center" style="background: linear-gradient(120deg, #e3f0ff 0%, #f8f9fa 100%); min-height: 90vh; border-radius: 1.5rem; box-shadow: 0 8px 32px rgba(14,70,140,0.07);">
     <div class="col-md-8">
-        <div class="card">
+        <div class="card" style="margin-top: 2.5rem; margin-bottom: 2.5rem; box-shadow: 0 8px 32px rgba(14,70,140,0.13);">
             <div class="card-header bg-white pb-0 border-0">
-                <h3 class="text-center mb-0"><i class="fas fa-upload"></i> Upload Excel File for Processing</h3>
+                <h3 class="text-center mb-0" style="font-size: 2.1rem; letter-spacing: 1px;"><i class="fas fa-upload"></i> Upload Excel File for Processing</h3>
             </div>
             <div class="card-body">
                 <form id="uploadForm" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label for="file" class="form-label">Excel File (.xlsx, .xls)</label>
-                        <input type="file" class="form-control" id="file" name="file" accept=".xlsx,.xls" required>
+                        <input type="file" class="form-control form-control-lg" id="file" name="file" accept=".xlsx,.xls" required>
                         <div class="form-text">Select an Excel file with the columns shown in the format guide below.</div>
                     </div>
-                    
                     <div class="mb-3">
                         <label for="sheet_name" class="form-label">Sheet Name</label>
-                        <input type="text" class="form-control" id="sheet_name" name="sheet_name" value="Sheet1" required>
+                        <input type="text" class="form-control form-control-lg" id="sheet_name" name="sheet_name" value="Sheet1" required>
                         <div class="form-text">Name of the sheet containing the employee data.</div>
                     </div>
-                    
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-brand btn-lg" id="uploadBtn">
+                        <button type="submit" class="btn btn-brand btn-lg shadow" id="uploadBtn" style="font-size: 1.2rem; font-weight: 700; background: linear-gradient(90deg, #0E468C 60%, #1e90ff 100%); border: none; border-radius: 2rem; color: #fff;">
                             <i class="fas fa-cogs"></i> Upload and Process
                         </button>
                     </div>
                 </form>
-                
                 <div id="uploadProgress" class="mt-3" style="display: none;">
                     <div class="progress">
                         <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
                     </div>
                     <p class="mt-2 text-center">Uploading and validating file...</p>
                 </div>
-                
                 <div id="uploadResult" class="mt-3"></div>
             </div>
         </div>
-        
-        <div class="card mt-4">
+        <div class="card mt-4" style="box-shadow: 0 2px 12px rgba(30,144,255,0.07);">
             <div class="card-header bg-white">
-                <h4><i class="fas fa-table"></i> Input File Format</h4>
+                <h4 style="font-size: 1.4rem;"><i class="fas fa-table"></i> Input File Format</h4>
             </div>
             <div class="card-body">
                 <p>Your Excel file must contain the following columns in any order:</p>
@@ -66,7 +61,7 @@
                     </tbody>
                 </table>
                 <div class="text-center mt-3">
-                    <a href="{{ url_for('static', path='input_format_template.xlsx') }}" class="btn btn-success" download>
+                    <a href="{{ url_for('static', path='input_format_template.xlsx') }}" class="btn btn-success btn-lg shadow" download>
                         <i class="fas fa-download"></i> Download Format Template
                     </a>
                 </div>

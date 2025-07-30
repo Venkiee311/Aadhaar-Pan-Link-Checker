@@ -20,8 +20,8 @@ class ProcessingJob(Base):
     completed_at = Column(DateTime)
     error_message = Column(Text)
 
-    employees = relationship("Employee", back_populates="job")
-    results = relationship("ProcessingResult", back_populates="job")
+    employees = relationship("Employee", back_populates="job", cascade="all, delete-orphan")
+    results = relationship("ProcessingResult", back_populates="job", cascade="all, delete-orphan")
 
 
 class Employee(Base):

@@ -3,34 +3,29 @@
 {% block title %}Processing Status - Pan-Aadhaar Link Checker{% endblock %}
 
 {% block content %}
-<div class="alert alert-info mt-4" role="alert">
-    <strong>Note:</strong> If you see errors in processing, please use the <b>Retry</b> button. 
-    <br>
-    <ul class="mb-1 mt-2">
-        <li>Errors often occur due to the government API being slow, temporarily unavailable, or rate-limited.</li>
-        <li>Retrying will attempt to process only the failed or unprocessed records.</li>
-        <li>If errors persist, please wait a few minutes and try again.</li>
-    </ul>
-</div>
-
-<div class="row">
+<div class="row justify-content-center" style="background: linear-gradient(120deg, #e3f0ff 0%, #f8f9fa 100%); min-height: 90vh; border-radius: 1.5rem; box-shadow: 0 8px 32px rgba(14,70,140,0.07);">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h3><i class="fas fa-tasks"></i> Processing Jobs Status</h3>
+        <div class="alert alert-warning d-flex align-items-center mt-4 mb-4" style="background: linear-gradient(90deg, #fffbe6 60%, #e3f0ff 100%); border-radius: 1rem; box-shadow: 0 2px 12px rgba(255,193,7,0.08); font-size: 1.1rem;">
+            <i class="fas fa-info-circle fa-2x me-3 text-primary"></i>
+            <div>
+                <strong>Retry Limitations & Error Information:</strong><br>
+                <ul class="mb-1 mt-2">
+                    <li>Errors often occur due to the government API being slow, temporarily unavailable, or rate-limited.</li>
+                    <li>Retrying will attempt to process only the failed or unprocessed records.</li>
+                    <li>If errors persist, please wait a few minutes and try again.</li>
+                    <li><b>Note:</b> The Retry button will not reprocess records that have already succeeded. It is only for failed or pending records.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="card" style="margin-top: 2.5rem; margin-bottom: 2.5rem; box-shadow: 0 8px 32px rgba(14,70,140,0.13);">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center" style="border-radius: 1.5rem 1.5rem 0 0;">
+                <h3 style="font-size: 2.1rem; letter-spacing: 1px;"><i class="fas fa-tasks"></i> Processing Jobs Status</h3>
                 <button class="btn btn-outline-primary" onclick="refreshJobs()">
                     <i class="fas fa-sync-alt"></i> Refresh
                 </button>
             </div>
             <div class="card-body">
-                <div id="jobsList">
-                    <div class="text-center">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2">Loading jobs...</p>
-                    </div>
-                </div>
+                <div id="jobsList"></div>
             </div>
         </div>
     </div>
@@ -63,13 +58,58 @@
 <script>
 let refreshInterval;
 
+function renderJobCards(jobs) {
+    let html = '<div class="row">';
+    jobs.forEach(job => {
+        const statusBadge = getStatusBadge(job.status);
+        const createdAt = new Date(job.created_at).toLocaleString();
+        const completedAt = job.completed_at ? new Date(job.completed_at).toLocaleString() : '-';
+        html += `
+            <div class="col-md-6 mb-4">
+                <div class="card status-card status-${job.status} job-card-hover" style="transition: box-shadow 0.2s, transform 0.2s; box-shadow: 0 4px 24px rgba(30,144,255,0.09); border-radius: 1rem;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="card-title mb-0" style="font-size: 1.2rem;">
+                                <i class="fas fa-file-excel text-success"></i> ${job.filename}
+                            </h6>
+                            ${statusBadge}
+                        </div>
+                        <p class="card-text mt-2">
+                            <small class="text-muted d-block">Job ID: ${job.job_id}</small>
+                            <strong>Total Rows:</strong> ${job.total_rows}<br>
+                            <strong>Created:</strong> ${createdAt}<br>
+                            <strong>Completed:</strong> ${completedAt}
+                        </p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewJobDetails('${job.job_id}')">
+                            <i class="fas fa-eye"></i> View Details
+                        </button>
+                        ${job.status === 'completed' ? `
+                            <a href="/jobs/${job.job_id}/download" class="btn btn-sm btn-success ms-2">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        ` : ''}
+                        ${(job.status === 'failed' || job.status === 'completed' || job.status === 'processing') ? `
+                            <button class="btn btn-sm btn-warning ms-2" onclick="retryJob('${job.job_id}')">
+                                <i class="fas fa-redo"></i> Retry
+                            </button>
+                        ` : ''}
+                        <button class="btn btn-sm btn-danger ms-2" onclick="deleteJob('${job.job_id}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    return html;
+}
+
 async function loadJobs() {
     try {
         const response = await fetch('/jobs');
         const jobs = await response.json();
-        
         const jobsList = document.getElementById('jobsList');
-        
         if (jobs.length === 0) {
             jobsList.innerHTML = `
                 <div class="text-center text-muted py-5">
@@ -79,52 +119,18 @@ async function loadJobs() {
             `;
             return;
         }
-        
-        let html = '<div class="row">';
-        
-        jobs.forEach(job => {
-            const statusBadge = getStatusBadge(job.status);
-            const createdAt = new Date(job.created_at).toLocaleString();
-            const completedAt = job.completed_at ? new Date(job.completed_at).toLocaleString() : '-';
-            
-            html += `
-                <div class="col-md-6 mb-3">
-                    <div class="card status-card status-${job.status}">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <h6 class="card-title mb-0">
-                                    <i class="fas fa-file-excel text-success"></i> ${job.filename}
-                                </h6>
-                                ${statusBadge}
-                            </div>
-                            <p class="card-text mt-2">
-                                <small class="text-muted d-block">Job ID: ${job.job_id}</small>
-                                <strong>Total Rows:</strong> ${job.total_rows}<br>
-                                <strong>Created:</strong> ${createdAt}<br>
-                                <strong>Completed:</strong> ${completedAt}
-                            </p>
-                            <button class="btn btn-sm btn-outline-primary" onclick="viewJobDetails('${job.job_id}')">
-                                <i class="fas fa-eye"></i> View Details
-                            </button>
-                            ${job.status === 'completed' ? `
-                                <a href="/jobs/${job.job_id}/download" class="btn btn-sm btn-success ms-2">
-                                    <i class="fas fa-download"></i> Download
-                                </a>
-                            ` : ''}
-                            ${(job.status === 'failed' || job.status === 'completed' || job.status === 'processing') ? `
-                                <button class="btn btn-sm btn-warning ms-2" onclick="retryJob('${job.job_id}')">
-                                    <i class="fas fa-redo"></i> Retry
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
+        jobsList.innerHTML = renderJobCards(jobs);
+        // Add hover effect
+        document.querySelectorAll('.job-card-hover').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.boxShadow = '0 8px 32px rgba(30,144,255,0.18)';
+                card.style.transform = 'translateY(-2px) scale(1.02)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.boxShadow = '0 4px 24px rgba(30,144,255,0.09)';
+                card.style.transform = 'none';
+            });
         });
-        
-        html += '</div>';
-        jobsList.innerHTML = html;
-        
     } catch (error) {
         document.getElementById('jobsList').innerHTML = `
             <div class="alert alert-danger">
@@ -142,7 +148,7 @@ async function viewJobDetails(jobId) {
         
         const createdAt = new Date(job.created_at).toLocaleString();
         const completedAt = job.completed_at ? new Date(job.completed_at).toLocaleString() : '-';
-        const progressPercent = job.total_rows > 0 ? Math.round((job.processed_rows / job.total_rows) * 100) : 0;
+        const progressPercent = Math.min(100, job.total_rows > 0 ? Math.round((job.processed_rows / job.total_rows) * 100) : 0);
         
         const modalBody = document.getElementById('jobModalBody');
         modalBody.innerHTML = `
@@ -166,6 +172,14 @@ async function viewJobDetails(jobId) {
                     </table>
                 </div>
             </div>
+            
+            ${job.processed_rows > job.total_rows ? `
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Note:</strong> Processed count (${job.processed_rows}) exceeds total rows (${job.total_rows}). 
+                    This may indicate duplicate processing or retry attempts.
+                </div>
+            ` : ''}
             
             <div class="progress-container">
                 <h6>Progress</h6>
@@ -220,7 +234,7 @@ function getStatusBadge(status) {
 }
 
 async function retryJob(jobId) {
-    if (!confirm('Are you sure you want to retry this job? This will only retry failed or unprocessed employees.')) {
+    if (!confirm('Are you sure you want to retry this job? This will only retry employees with service failures (timeouts, network errors, etc.) and will NOT retry employees who already received valid API responses (like "PAN not linked" or "Invalid PAN").')) {
         return;
     }
     
@@ -247,6 +261,26 @@ async function retryJob(jobId) {
         }
     } catch (error) {
         alert('Error retrying job: ' + error.message);
+    }
+}
+
+async function deleteJob(jobId) {
+    if (!confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
+        return;
+    }
+    try {
+        const response = await fetch(`/jobs/${jobId}`, {
+            method: 'DELETE'
+        });
+        if (response.status === 204) {
+            alert('Job deleted successfully.');
+            loadJobs();
+        } else {
+            const error = await response.json();
+            alert('Error deleting job: ' + error.detail);
+        }
+    } catch (error) {
+        alert('Error deleting job: ' + error.message);
     }
 }
 

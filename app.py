@@ -3,13 +3,13 @@ import json
 import logging
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional
 
 import aiofiles
 from asyncio_throttle import Throttler
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -39,9 +39,42 @@ RESULTS_DIR.mkdir(exist_ok=True)
 
 throttler = Throttler(rate_limit=5, period=60)
 
+async def cleanup_old_files():
+    """Clean up old uploaded and result files to prevent disk space issues"""
+    try:
+        # Clean up files older than 7 days
+        cutoff_time = datetime.now() - timedelta(days=7)
+        
+        # Clean uploaded files
+        for file_path in UPLOAD_DIR.glob("*"):
+            if file_path.is_file():
+                file_time = datetime.fromtimestamp(file_path.stat().st_mtime)
+                if file_time < cutoff_time:
+                    file_path.unlink()
+                    logger.info(f"Cleaned up old uploaded file: {file_path}")
+        
+        # Clean result files
+        for file_path in RESULTS_DIR.glob("*"):
+            if file_path.is_file():
+                file_time = datetime.fromtimestamp(file_path.stat().st_mtime)
+                if file_time < cutoff_time:
+                    file_path.unlink()
+                    logger.info(f"Cleaned up old result file: {file_path}")
+                    
+    except Exception as e:
+        logger.error(f"Error during file cleanup: {e}")
+
 @app.on_event("startup")
 async def startup_event():
     await init_db()
+    # Schedule periodic cleanup
+    asyncio.create_task(periodic_cleanup())
+
+async def periodic_cleanup():
+    """Run cleanup every 6 hours"""
+    while True:
+        await asyncio.sleep(6 * 60 * 60)  # 6 hours
+        await cleanup_old_files()
 
 @app.get("/", response_class=HTMLResponse)
 async def upload_form(request: Request):
@@ -121,6 +154,10 @@ async def get_job_status(job_id: str):
         )
         results = result.scalars().all()
         
+        # Count unique employees for accurate progress calculation
+        processed_empnos = set(r.empno for r in results)
+        processed_rows = len(processed_empnos)
+        
         success_count = sum(1 for r in results if r.status == "success")
         error_count = sum(1 for r in results if r.status == "error")
         
@@ -128,7 +165,7 @@ async def get_job_status(job_id: str):
             "job_id": job_id,
             "status": job.status,
             "total_rows": job.total_rows,
-            "processed_rows": len(results),
+            "processed_rows": processed_rows,
             "success_count": success_count,
             "error_count": error_count,
             "created_at": job.created_at,
@@ -176,6 +213,10 @@ async def retry_job(job_id: str):
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
         
+        # Prevent multiple concurrent retries
+        if job.status == "processing":
+            raise HTTPException(status_code=400, detail="Job is already processing. Please wait for it to complete before retrying.")
+        
         if job.status not in ["failed", "completed", "processing"]:
             raise HTTPException(status_code=400, detail="Job cannot be retried")
         
@@ -207,6 +248,18 @@ async def retry_job(job_id: str):
             "message": "Job retry initiated",
             "employees_to_retry": len(employees_to_retry)
         }
+
+@app.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_job(job_id: str):
+    async with SessionLocal() as db:
+        result = await db.execute(select(ProcessingJob).where(ProcessingJob.id == job_id))
+        job = result.scalar_one_or_none()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        await db.delete(job)
+        await db.commit()
+    # Optionally, delete files associated with the job here
+    return
 
 if __name__ == "__main__":
     import uvicorn
