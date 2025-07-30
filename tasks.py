@@ -27,7 +27,8 @@ MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds
 
 # Global rate limiter to prevent API rate limit violations across all jobs
-GLOBAL_THROTTLER = Throttler(rate_limit=RATE_LIMIT_PER_MINUTE, period=60)
+GLOBAL_THROTTLER = Throttler(rate_limit=30, period=60)
+# Use this for all API calls
 
 class APIResponseMessage(BaseModel):
     code: str
@@ -336,6 +337,12 @@ async def retry_failed_processing(job_id: str) -> None:
         
         # Update job status to processing
         async with SessionLocal() as db:
+            # Only allow retry if job.status != "processing"
+            job = await db.get(ProcessingJob, job_id)
+            if job.status == "processing":
+                logger.warning(f"Job {job_id} is already processing.")
+                return
+            
             await db.execute(
                 update(ProcessingJob)
                 .where(ProcessingJob.id == job_id)
@@ -383,7 +390,7 @@ async def retry_failed_processing(job_id: str) -> None:
                 select(ProcessingResult.empno)
                 .where(ProcessingResult.job_id == job_id)
             )
-            processed_empnos = {row[0] for row in processed_result.fetchall()}
+            processed_empnos = set(r.empno for r in processed_result.fetchall())
             unprocessed_empnos = {emp.empno for emp in all_employees} - processed_empnos
             
             # Combine service failures and unprocessed employees
@@ -413,10 +420,10 @@ async def retry_failed_processing(job_id: str) -> None:
             
             from sqlalchemy import delete
             await db.execute(
-                delete(ProcessingResult)
-                .where(ProcessingResult.job_id == job_id)
-                .where(ProcessingResult.empno.in_(empnos_to_reprocess))
-                .where(ProcessingResult.status == "error")
+                delete(ProcessingResult).where(
+                    ProcessingResult.job_id == job_id,
+                    ProcessingResult.empno.in_(empnos_to_reprocess)
+                )
             )
             await db.commit()
         
@@ -461,5 +468,4 @@ async def retry_failed_processing(job_id: str) -> None:
                 .where(ProcessingJob.id == job_id)
                 .values(status="failed", error_message=f"Retry failed: {str(e)}", completed_at=datetime.utcnow())
             )
-            await db.commit()            
-            
+            await db.commit()

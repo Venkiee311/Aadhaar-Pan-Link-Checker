@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -39,6 +39,7 @@ class Employee(Base):
 
 class ProcessingResult(Base):
     __tablename__ = "processing_results"
+    __table_args__ = (UniqueConstraint('job_id', 'empno', name='_job_empno_uc'),)
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     job_id = Column(String, ForeignKey("processing_jobs.id"), nullable=False)
